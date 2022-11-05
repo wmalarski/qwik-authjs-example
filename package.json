@@ -23,6 +23,7 @@
   "devDependencies": {
     "@builder.io/qwik": "0.12.1",
     "@builder.io/qwik-city": "0.0.118",
+    "@types/cookie": "^0.5.1",
     "@types/eslint": "8.4.8",
     "@types/node": "latest",
     "@typescript-eslint/eslint-plugin": "5.41.0",
@@ -34,5 +35,10 @@
     "typescript": "4.8.4",
     "vite": "3.2.1",
     "vite-tsconfig-paths": "3.5.0"
+  },
+  "dependencies": {
+    "cookie": "^0.5.0",
+    "next-auth": "^4.15.1",
+    "zod": "^3.19.1"
   }
 }
