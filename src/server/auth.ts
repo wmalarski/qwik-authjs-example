@@ -14,6 +14,7 @@ import type {
   NextAuthOptions,
   Session,
 } from "next-auth/core/types";
+import { env } from "./env";
 
 const getBody = (formData: FormData | null): Record<string, any> => {
   const data: Record<string, any> = {};
@@ -45,7 +46,7 @@ const QWikNextAuthHandler = async (
 
   const res = await NextAuthHandler({
     req: {
-      host: process.env.NEXTAUTH_URL,
+      host: env.VITE_NEXTAUTH_URL,
       body,
       query,
       headers: request.headers,
@@ -99,7 +100,7 @@ export const getServerSession = async (
   const { request, response } = event;
   const res = await NextAuthHandler({
     req: {
-      host: process.env.NEXTAUTH_URL,
+      host: env.VITE_NEXTAUTH_URL,
       headers: request.headers,
       method: "GET",
       cookies: getCookie(request.headers),
@@ -123,7 +124,7 @@ export const getServerCsrfToken = async (
 ) => {
   const { body } = await NextAuthHandler({
     req: {
-      host: process.env.NEXTAUTH_URL,
+      host: env.VITE_NEXTAUTH_URL,
       headers: request.headers,
       method: "GET",
       cookies: getCookie(request.headers),
@@ -148,7 +149,7 @@ export const getServerProviders = async (
 ) => {
   const { body } = await NextAuthHandler({
     req: {
-      host: process.env.NEXTAUTH_URL,
+      host: env.VITE_NEXTAUTH_URL,
       headers: request.headers,
       method: "GET",
       cookies: getCookie(request.headers),
