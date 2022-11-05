@@ -28,6 +28,21 @@ const getBody = (formData: FormData | null): Record<string, any> => {
   return data;
 };
 
+const setCookies = (response: ResponseContext, cookies?: Cookie[]) => {
+  if (!cookies) return;
+  for (const c of cookies) {
+    // TODO: replace with new API
+    response.headers.append(
+      "set-cookie",
+      cookie.serialize(c.name, c.value, c.options)
+    );
+  }
+};
+
+const getCookie = (headers: Headers) => {
+  return cookie.parse(headers.get("cookie") || "");
+};
+
 const QWikNextAuthHandler = async (
   event: RequestEvent,
   options: NextAuthOptions
@@ -64,10 +79,8 @@ const QWikNextAuthHandler = async (
   for (const header of headers || []) {
     response.headers.append(header.key, header.value);
   }
-  setCookies(
-    response,
-    cookies?.filter((c) => !(c.name === "next-auth.state") || !!c.value) // workaround for Qwik
-  );
+
+  setCookies(response, cookies);
 
   if (redirect) {
     if (body?.json !== "true") {
@@ -81,17 +94,6 @@ const QWikNextAuthHandler = async (
 
   return res.body;
 };
-export const setCookies = (response: ResponseContext, cookies?: Cookie[]) => {
-  if (!cookies) return;
-  for (const c of cookies) {
-    response.headers.set(
-      "set-cookie",
-      cookie.serialize(c.name, c.value, c.options)
-    );
-  }
-};
-export const getCookie = (headers: Headers) =>
-  cookie.parse(headers.get("cookie") || "");
 
 export const getServerSession = async (
   event: RequestEvent,
@@ -135,13 +137,13 @@ export const getServerCsrfToken = async (
   return (body as { csrfToken: string }).csrfToken;
 };
 
-export interface PublicProvider {
+export type PublicProvider = {
   id: string;
   name: string;
   type: string;
   signinUrl: string;
   callbackUrl: string;
-}
+};
 
 export const getServerProviders = async (
   request: RequestContext,
