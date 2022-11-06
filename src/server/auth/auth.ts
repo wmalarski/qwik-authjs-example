@@ -14,7 +14,7 @@ import type {
   NextAuthOptions,
   Session,
 } from "next-auth/core/types";
-import { env } from "./env";
+import { env } from "../env";
 
 const getBody = (formData: FormData | null): Record<string, any> => {
   const data: Record<string, any> = {};

@@ -1,18 +1,9 @@
 import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead, RequestEvent, useEndpoint } from "@builder.io/qwik-city";
-import type { inferPromise } from "~/utils/types";
-
-export const onGet = async (event: RequestEvent) => {
-  const { authOptions } = await import("~/server/authOptions");
-  const { getServerSession } = await import("~/server/auth");
-
-  const session = await getServerSession(event, authOptions);
-
-  return { session };
-};
+import { DocumentHead } from "@builder.io/qwik-city";
+import { useSessionContext } from "./SessionContext";
 
 export default component$(() => {
-  const resource = useEndpoint<inferPromise<typeof onGet>>();
+  const resource = useSessionContext();
 
   return (
     <div>
@@ -27,7 +18,7 @@ export default component$(() => {
         onResolved={(data) => (
           <div>
             <pre>{JSON.stringify(data, null, 2)}</pre>
-            {data.session ? (
+            {data ? (
               <a href="/api/auth/signout">Sing Out</a>
             ) : (
               <a href="/api/auth/signin">Sign In</a>

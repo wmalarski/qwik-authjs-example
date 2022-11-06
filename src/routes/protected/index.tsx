@@ -1,26 +1,21 @@
 import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead, Link, useEndpoint } from "@builder.io/qwik-city";
-import { withSession } from "~/server/withSession";
-import type { inferPromise } from "~/utils/types";
-
-export const onGet = withSession((event) => {
-  return event.session;
-});
+import { DocumentHead } from "@builder.io/qwik-city";
+import { useUserContext } from "./UserContext";
 
 export default component$(() => {
-  const resource = useEndpoint<inferPromise<typeof onGet>>();
+  const userResource = useUserContext();
 
   return (
     <div>
       <h1>Protected</h1>
-      <Link href="/">Home</Link>
+      <a href="/">Home</a>
       <Resource
-        value={resource}
+        value={userResource}
         onPending={() => <span>Pending</span>}
         onRejected={() => <span>Rejected</span>}
         onResolved={(data) => (
           <div>
-            <h2>Session</h2>
+            <h2>User</h2>
             <pre>{JSON.stringify(data, null, 2)}</pre>
           </div>
         )}
@@ -30,5 +25,5 @@ export default component$(() => {
 });
 
 export const head: DocumentHead = {
-  title: "Protected - Welcome to Qwik",
+  title: "Protected route - Welcome to Qwik",
 };

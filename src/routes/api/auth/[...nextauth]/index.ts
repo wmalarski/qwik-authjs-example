@@ -1,4 +1,4 @@
-import { NextAuth } from "~/server/auth";
-import { authOptions } from "~/server/authOptions";
+import { NextAuth } from "~/server/auth/auth";
+import { authOptions } from "~/server/auth/options";
 
 export const { onGet, onPost } = NextAuth(authOptions);
