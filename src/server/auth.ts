@@ -28,19 +28,31 @@ const getBody = (formData: FormData | null): Record<string, any> => {
   return data;
 };
 
+const tempCookieName = "next-auth.temp";
+
 const setCookies = (response: ResponseContext, cookies?: Cookie[]) => {
-  if (!cookies) return;
-  for (const c of cookies) {
-    // TODO: replace with new API
-    response.headers.append(
-      "set-cookie",
-      cookie.serialize(c.name, c.value, c.options)
-    );
-  }
+  if (!cookies || cookies.length < 1) return;
+
+  // TODO: change to new api when available
+  // this is temporary fix for not able to save multiple cookies
+  // using 'set-cookie' header
+  const value = JSON.stringify(cookies.map((c) => [c.name, c.value]));
+  const options = cookies[0].options;
+
+  response.headers.set(
+    "set-cookie",
+    cookie.serialize(tempCookieName, value, options)
+  );
 };
 
 const getCookie = (headers: Headers) => {
-  return cookie.parse(headers.get("cookie") || "");
+  const result = cookie.parse(headers.get("cookie") || "");
+
+  // TODO: change to new api when available
+  const parsed = JSON.parse(result[tempCookieName] || "[]");
+  const restoredCookies = Object.fromEntries(parsed);
+
+  return { ...result, ...restoredCookies };
 };
 
 const QWikNextAuthHandler = async (

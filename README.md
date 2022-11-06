@@ -1,7 +1,5 @@
 # Qwik City + Next Auth ⚡️
 
-IN PROGRESS
-
 ## TODO
 
 - [ ] - fix saving cookies when new qwik release cookies api
