@@ -1,6 +1,15 @@
-# Qwik App ⚡️
+# Qwik City + Next Auth ⚡️
+
+IN PROGRESS
+
+## TODO
+
+- [ ] - fix saving cookies when new qwik release cookies api
+
+## Tools
 
 - [Qwik Docs](https://qwik.builder.io/)
+- [Next-Auth.js](https://next-auth.js.org/)
 - [Discord](https://qwik.builder.io/chat)
 - [Qwik GitHub](https://github.com/BuilderIO/qwik)
 - [@QwikDev](https://twitter.com/QwikDev)
@@ -15,7 +24,7 @@
 
 Inside your project, you'll see the following directory structure:
 
-```
+```graphql
 ├── public/
 │   └── ...
 └── src/
