@@ -1,19 +1,14 @@
 import { component$, Resource } from "@builder.io/qwik";
 import { DocumentHead, RequestEvent, useEndpoint } from "@builder.io/qwik-city";
-import { authOptions } from "~/server/authOptions";
-import { inferPromise } from "~/utils/types";
+import type { inferPromise } from "~/utils/types";
 
 export const onGet = async (event: RequestEvent) => {
-  const { getServerCsrfToken, getServerProviders, getServerSession } =
-    await import("~/server/auth");
+  const { authOptions } = await import("~/server/authOptions");
+  const { getServerSession } = await import("~/server/auth");
 
-  const [token, providers, session] = await Promise.all([
-    getServerCsrfToken(event.request, authOptions),
-    getServerProviders(event.request, authOptions),
-    getServerSession(event, authOptions),
-  ]);
+  const session = await getServerSession(event, authOptions);
 
-  return { token, providers, session };
+  return { session };
 };
 
 export default component$(() => {
@@ -24,7 +19,7 @@ export default component$(() => {
       <h1>
         Welcome to Qwik <span class="lightning">⚡️</span>
       </h1>
-      <a href="/api/auth/signin">Built in</a>
+      <a href="/protected">Protected</a>
       <Resource
         value={resource}
         onPending={() => <span>Pending</span>}
@@ -32,23 +27,11 @@ export default component$(() => {
         onResolved={(data) => (
           <div>
             <pre>{JSON.stringify(data, null, 2)}</pre>
-            {Object.entries(data.providers || {}).map(([provider, options]) => (
-              <button
-                key={provider}
-                onClick$={async () => {
-                  const form = new FormData();
-                  form.append("csrfToken", data.token);
-                  form.append("callbackUrl", options.callbackUrl);
-                  const response = await fetch(options.signinUrl, {
-                    body: form,
-                    method: "POST",
-                  });
-                  console.log(response);
-                }}
-              >
-                {`Sign In using ${options.name}`}
-              </button>
-            ))}
+            {data.session ? (
+              <a href="/api/auth/signout">Sing Out</a>
+            ) : (
+              <a href="/api/auth/signin">Sign In</a>
+            )}
           </div>
         )}
       />
