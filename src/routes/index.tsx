@@ -3,7 +3,7 @@ import { DocumentHead } from "@builder.io/qwik-city";
 import { useSessionContext } from "./SessionContext";
 
 export default component$(() => {
-  const resource = useSessionContext();
+  const sessionResource = useSessionContext();
 
   return (
     <div>
@@ -12,7 +12,7 @@ export default component$(() => {
       </h1>
       <a href="/protected">Protected</a>
       <Resource
-        value={resource}
+        value={sessionResource}
         onPending={() => <span>Pending</span>}
         onRejected={() => <span>Rejected</span>}
         onResolved={(data) => (

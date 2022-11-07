@@ -1,10 +1,10 @@
 import { RequestEvent } from "@builder.io/qwik-city";
 import { Session } from "next-auth";
 
-export const withSession = <T>(
-  handler: (event: RequestEvent & { session: Session | null }) => T | Promise<T>
+export const withSession = <T, E extends RequestEvent = RequestEvent>(
+  handler: (event: E & { session: Session | null }) => T | Promise<T>
 ) => {
-  return async (event: RequestEvent) => {
+  return async (event: E) => {
     const { getServerSession } = await import("./auth");
     const { authOptions } = await import("./options");
 
@@ -18,11 +18,11 @@ type WithProtectedSessionOptions = {
   redirectTo?: string;
 };
 
-export const withProtectedSession = <T>(
-  handler: (event: RequestEvent & { session: Session }) => T | Promise<T>,
+export const withProtectedSession = <T, E extends RequestEvent = RequestEvent>(
+  handler: (event: E & { session: Session }) => T | Promise<T>,
   options: WithProtectedSessionOptions = {}
 ) => {
-  return withSession(async (event) => {
+  return withSession<T, E>(async (event: E & { session: Session | null }) => {
     if (!event.session) {
       throw event.response.redirect(options.redirectTo || "/api/auth/signin");
     }

@@ -73,15 +73,15 @@ const QWikNextAuthHandler = async (
 
   const res = await NextAuthHandler({
     req: {
-      host: env.VITE_NEXTAUTH_URL,
-      body,
-      query,
-      headers: request.headers,
-      method: request.method,
-      cookies: getCookie(request.headers),
       action: action as NextAuthAction,
-      providerId,
+      body,
+      cookies: getCookie(request.headers),
       error: (query.error as string | undefined) ?? providerId,
+      headers: request.headers,
+      host: env.VITE_NEXTAUTH_URL,
+      method: request.method,
+      providerId,
+      query,
     },
     options,
   });
@@ -114,11 +114,11 @@ export const getServerSession = async (
   const { request, response } = event;
   const res = await NextAuthHandler({
     req: {
-      host: env.VITE_NEXTAUTH_URL,
-      headers: request.headers,
-      method: "GET",
-      cookies: getCookie(request.headers),
       action: "session",
+      cookies: getCookie(request.headers),
+      headers: request.headers,
+      host: env.VITE_NEXTAUTH_URL,
+      method: "GET",
     },
     options,
   });
@@ -138,11 +138,11 @@ export const getServerCsrfToken = async (
 ) => {
   const { body } = await NextAuthHandler({
     req: {
-      host: env.VITE_NEXTAUTH_URL,
-      headers: request.headers,
-      method: "GET",
-      cookies: getCookie(request.headers),
       action: "csrf",
+      cookies: getCookie(request.headers),
+      headers: request.headers,
+      host: env.VITE_NEXTAUTH_URL,
+      method: "GET",
     },
     options,
   });
@@ -163,11 +163,11 @@ export const getServerProviders = async (
 ) => {
   const { body } = await NextAuthHandler({
     req: {
-      host: env.VITE_NEXTAUTH_URL,
-      headers: request.headers,
-      method: "GET",
-      cookies: getCookie(request.headers),
       action: "providers",
+      cookies: getCookie(request.headers),
+      headers: request.headers,
+      host: env.VITE_NEXTAUTH_URL,
+      method: "GET",
     },
     options,
   });

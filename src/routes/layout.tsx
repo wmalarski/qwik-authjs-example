@@ -13,17 +13,10 @@ export default component$(() => {
   useSessionContextProvider(resource);
 
   return (
-    <>
-      <main>
-        <section>
-          <Slot />
-        </section>
-      </main>
-      <footer>
-        <a href="https://www.builder.io/" target="_blank">
-          Made with ♡ by Builder.io
-        </a>
-      </footer>
-    </>
+    <main>
+      <section>
+        <Slot />
+      </section>
+    </main>
   );
 });
