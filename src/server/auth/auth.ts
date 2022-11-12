@@ -1,14 +1,12 @@
 // Code copied from
 // https://gist.github.com/langbamit/a09161e844ad9b4a3cb756bacde67796
 import type {
-  RequestContext,
+  Cookie,
   RequestEvent,
   RequestHandler,
-  ResponseContext,
 } from "@builder.io/qwik-city";
-import * as cookie from "cookie";
 import { NextAuthHandler } from "next-auth/core";
-import { Cookie } from "next-auth/core/lib/cookie";
+import { Cookie as AuthCookie } from "next-auth/core/lib/cookie";
 import type {
   NextAuthAction,
   NextAuthOptions,
@@ -30,36 +28,32 @@ const getBody = (formData: FormData | null): Record<string, any> => {
 
 const tempCookieName = "next-auth.temp";
 
-const setCookies = (response: ResponseContext, cookies?: Cookie[]) => {
+const setCookies = (cookie: Cookie, cookies?: AuthCookie[]) => {
   if (!cookies || cookies.length < 1) return;
 
-  // TODO: change to new api when available
-  // this is temporary fix for not able to save multiple cookies
-  // using 'set-cookie' header
+  // TODO: save in multiple headers when possible
   const value = JSON.stringify(cookies.map((c) => [c.name, c.value]));
   const options = cookies[0].options;
-
-  response.headers.set(
-    "set-cookie",
-    cookie.serialize(tempCookieName, value, options)
-  );
+  cookie.set(tempCookieName, value, {
+    ...options,
+    sameSite:
+      typeof options.sameSite === "boolean" ? undefined : options.sameSite,
+  });
 };
 
-const getCookie = (headers: Headers) => {
-  const result = cookie.parse(headers.get("cookie") || "");
+const getCookie = (cookie: Cookie) => {
+  const result = cookie.get(tempCookieName);
+  const json = result?.json<string[][]>();
 
   // TODO: change to new api when available
-  const parsed = JSON.parse(result[tempCookieName] || "[]");
-  const restoredCookies = Object.fromEntries(parsed);
-
-  return { ...result, ...restoredCookies };
+  return Object.fromEntries(json || []);
 };
 
 const QWikNextAuthHandler = async (
   event: RequestEvent,
   options: NextAuthOptions
 ) => {
-  const { request, params, url, response } = event;
+  const { request, params, url, response, cookie } = event;
   const [action, providerId] = params.nextauth!.split("/");
 
   let body = undefined;
@@ -75,7 +69,7 @@ const QWikNextAuthHandler = async (
     req: {
       action: action as NextAuthAction,
       body,
-      cookies: getCookie(request.headers),
+      cookies: getCookie(cookie),
       error: (query.error as string | undefined) ?? providerId,
       headers: request.headers,
       host: env.VITE_NEXTAUTH_URL,
@@ -92,7 +86,7 @@ const QWikNextAuthHandler = async (
     response.headers.append(header.key, header.value);
   }
 
-  setCookies(response, cookies);
+  setCookies(cookie, cookies);
 
   if (redirect) {
     if (body?.json !== "true") {
@@ -111,11 +105,12 @@ export const getServerSession = async (
   event: RequestEvent,
   options: NextAuthOptions
 ): Promise<Session | null> => {
-  const { request, response } = event;
+  const { request, cookie } = event;
+
   const res = await NextAuthHandler({
     req: {
       action: "session",
-      cookies: getCookie(request.headers),
+      cookies: getCookie(cookie),
       headers: request.headers,
       host: env.VITE_NEXTAUTH_URL,
       method: "GET",
@@ -124,7 +119,7 @@ export const getServerSession = async (
   });
   const { body, cookies } = res;
 
-  setCookies(response, cookies);
+  setCookies(cookie, cookies);
 
   if (body && typeof body !== "string" && Object.keys(body).length) {
     return body as Session;
@@ -133,13 +128,15 @@ export const getServerSession = async (
 };
 
 export const getServerCsrfToken = async (
-  request: RequestContext,
+  event: RequestEvent,
   options: NextAuthOptions
 ) => {
+  const { cookie, request } = event;
+
   const { body } = await NextAuthHandler({
     req: {
       action: "csrf",
-      cookies: getCookie(request.headers),
+      cookies: getCookie(cookie),
       headers: request.headers,
       host: env.VITE_NEXTAUTH_URL,
       method: "GET",
@@ -158,13 +155,15 @@ export type PublicProvider = {
 };
 
 export const getServerProviders = async (
-  request: RequestContext,
+  event: RequestEvent,
   options: NextAuthOptions
 ) => {
+  const { cookie, request } = event;
+
   const { body } = await NextAuthHandler({
     req: {
       action: "providers",
-      cookies: getCookie(request.headers),
+      cookies: getCookie(cookie),
       headers: request.headers,
       host: env.VITE_NEXTAUTH_URL,
       method: "GET",
