@@ -37,7 +37,11 @@ const setCookies = (cookie: Cookie, cookies?: AuthCookie[]) => {
   cookie.set(tempCookieName, value, {
     ...options,
     sameSite:
-      typeof options.sameSite === "boolean" ? undefined : options.sameSite,
+      options.sameSite === true
+        ? "strict"
+        : options.sameSite === false
+        ? undefined
+        : options.sameSite,
   });
 };
 
