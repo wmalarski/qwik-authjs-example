@@ -3,6 +3,11 @@ import type { NextAuthOptions } from "next-auth/core/types";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { env } from "../env";
 
+const Credentials =
+  typeof CredentialsProvider === "function"
+    ? CredentialsProvider
+    : ((CredentialsProvider as any).default as typeof CredentialsProvider);
+
 export const authOptions: NextAuthOptions = {
   secret: env.VITE_NEXTAUTH_SECRET,
   providers: [
@@ -11,7 +16,7 @@ export const authOptions: NextAuthOptions = {
     //   clientSecret: env.VITE_AUTH0_CLIENT_SECRET,
     //   issuer: env.VITE_AUTH0_ISSUER,
     // }),
-    CredentialsProvider({
+    Credentials({
       name: "Credentials",
       credentials: {
         username: { label: "Username", type: "text", placeholder: "jsmith" },
