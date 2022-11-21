@@ -12,4 +12,4 @@ if (typeof window !== "undefined") {
   throw new Error("server env is on client!!");
 }
 
-export const env = envScheme.parse(import.meta.env);
+export const env = envScheme.parse(process.env);
