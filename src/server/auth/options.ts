@@ -9,7 +9,7 @@ const Credentials =
     : ((CredentialsProvider as any).default as typeof CredentialsProvider);
 
 export const authOptions: NextAuthOptions = {
-  secret: env.VITE_NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET,
   providers: [
     // Auth0Provider({
     //   clientId: env.VITE_AUTH0_CLIENT_ID,
