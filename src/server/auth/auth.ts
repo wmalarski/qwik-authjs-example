@@ -1,190 +1,147 @@
-// Code copied from
-// https://gist.github.com/langbamit/a09161e844ad9b4a3cb756bacde67796
-import type {
-  Cookie,
-  RequestEvent,
-  RequestHandler,
-} from "@builder.io/qwik-city";
-import { NextAuthHandler } from "next-auth/core";
-import { Cookie as AuthCookie } from "next-auth/core/lib/cookie";
-import type {
-  NextAuthAction,
-  NextAuthOptions,
-  Session,
-} from "next-auth/core/types";
-import { env } from "../env";
+import { Auth, type AuthConfig } from "@auth/core";
+import { AuthAction, Session } from "@auth/core/types";
+import type { loader$, RequestEvent } from "@builder.io/qwik-city";
+import crypto from "crypto";
 
-const getBody = (formData: FormData | null): Record<string, any> => {
-  const data: Record<string, any> = {};
-  (formData || []).forEach((value, key) => {
-    if (key in data)
-      data[key] = Array.isArray(data[key])
-        ? [...data[key], value]
-        : [data[key], value];
-    else data[key] = value;
-  }, {});
-  return data;
-};
+// This solves issue with @auth/core I have.
+// [vite] Internal server error: crypto is not defined
+// don't know why it' happening
+global.crypto = crypto.webcrypto;
 
-const tempCookieName = "next-auth.temp";
+export interface QwikAuthConfig extends AuthConfig {
+  /**
+   * Defines the base path for the auth routes.
+   * @default '/api/auth'
+   */
+  prefix?: string;
+}
 
-const setCookies = (cookie: Cookie, cookies?: AuthCookie[]) => {
-  if (!cookies || cookies.length < 1) return;
+const actions: AuthAction[] = [
+  "providers",
+  "session",
+  "csrf",
+  "signin",
+  "signout",
+  "callback",
+  "verify-request",
+  "error",
+];
 
-  // TODO: save in multiple headers when possible
-  const value = JSON.stringify(cookies.map((c) => [c.name, c.value]));
-  const options = cookies[0].options;
-  cookie.set(tempCookieName, value, {
-    ...options,
-    sameSite:
-      options.sameSite === true
-        ? "strict"
-        : options.sameSite === false
-        ? undefined
-        : options.sameSite,
-  });
-};
+// currently multiple cookies are not supported, so we keep the next-auth.pkce.code_verifier cookie for now:
+// because it gets updated anyways
+// src: https://github.com/solidjs/solid-start/issues/293
+// const getSetCookieCallback = (cookie?: string | null) => {
+//   // if (!cook) return
+//   // const splitCookie = splitCookiesString(cook)
+//   // for (const cookName of [
+//   //   "__Secure-next-auth.session-token",
+//   //   "next-auth.session-token",
+//   //   "next-auth.pkce.code_verifier",
+//   //   "__Secure-next-auth.pkce.code_verifier",
+//   // ]) {
+//   //   const temp = splitCookie.find((e) => e.startsWith(`${cookName}=`))
+//   //   if (temp) {
+//   //     return parseString(temp)
+//   //   }
+//   // }
+//   // return parseString(splitCookie?.[0] ?? "") // just return the first cookie if no session token is found
+//   console.log(cookie);
+//   return [];
+// };
 
-const getCookie = (cookie: Cookie) => {
-  const result = cookie.get(tempCookieName);
-  const json = result?.json<string[][]>();
+const QwikAuthHandler = (prefix: string, authOptions: QwikAuthConfig) => {
+  return async (event: RequestEvent) => {
+    const { request } = event;
 
-  // TODO: change to new api when available
-  return Object.fromEntries(json || []);
-};
+    const url = new URL(request.url);
 
-const QWikNextAuthHandler = async (
-  event: RequestEvent,
-  options: NextAuthOptions
-) => {
-  const { request, params, url, response, cookie } = event;
-  const [action, providerId] = params.nextauth!.split("/");
+    const action = url.pathname
+      .slice(prefix.length + 1)
+      .split("/")[0] as AuthAction;
 
-  let body = undefined;
-  try {
-    const formData = await request.formData();
-    body = getBody(formData);
-  } catch (error) {
-    // no formData passed
-  }
-  const query = Object.fromEntries(url.searchParams);
-
-  const res = await NextAuthHandler({
-    req: {
-      action: action as NextAuthAction,
-      body,
-      cookies: getCookie(cookie),
-      error: (query.error as string | undefined) ?? providerId,
-      headers: request.headers,
-      host: env.NEXTAUTH_URL,
-      method: request.method,
-      providerId,
-      query,
-    },
-    options,
-  });
-
-  const { cookies, redirect, headers, status } = res;
-
-  for (const header of headers || []) {
-    response.headers.append(header.key, header.value);
-  }
-
-  setCookies(cookie, cookies);
-
-  if (redirect) {
-    if (body?.json !== "true") {
-      throw response.redirect(redirect, 302);
+    if (!actions.includes(action) || !url.pathname.startsWith(prefix + "/")) {
+      return;
     }
-    response.headers.set("Content-Type", "application/json");
-    return { url: redirect };
-  }
 
-  response.status = status || 200;
+    const res = await Auth(request as any, authOptions);
 
-  return res.body;
+    if (["callback", "signin", "signout"].includes(action)) {
+      const resCookies = res.clone().headers.get("Set-Cookie");
+
+      if (resCookies) {
+        event.cookie.set("Set-Cookie", resCookies);
+      }
+
+      // const parsedCookie = getSetCookieCallback(
+      //   res.clone().headers.get("Set-Cookie")
+      // );
+      //   res.headers.delete("Set-Cookie");
+
+      // if (parsedCookie) {
+      //   res.headers.set(
+      //     "Set-Cookie",
+      //     serialize(parsedCookie.name, parsedCookie.value, parsedCookie as any)
+      //   );
+      // }
+    }
+
+    event.status(res.status);
+
+    event.send(res.status, "");
+
+    // console.log({ res, body: res.body, headers: res.headers, r: res.url });
+
+    return res;
+  };
 };
 
-export const getServerSession = async (
-  event: RequestEvent,
-  options: NextAuthOptions
-): Promise<Session | null> => {
-  const { request, cookie } = event;
+export const QwikAuth = (config: QwikAuthConfig) => {
+  const { prefix = "/api/auth", ...authOptions } = config;
 
-  const res = await NextAuthHandler({
-    req: {
-      action: "session",
-      cookies: getCookie(cookie),
-      headers: request.headers,
-      host: env.NEXTAUTH_URL,
-      method: "GET",
+  authOptions.secret ??= process.env.AUTH_SECRET;
+
+  authOptions.trustHost ??= !!(
+    process.env.AUTH_TRUST_HOST ??
+    process.env.VERCEL ??
+    process.env.NODE_ENV !== "production"
+  );
+
+  const handler = QwikAuthHandler(prefix, authOptions);
+
+  return {
+    onGet: (event: any) => {
+      return handler(event);
     },
-    options,
-  });
-  const { body, cookies } = res;
-
-  setCookies(cookie, cookies);
-
-  if (body && typeof body !== "string" && Object.keys(body).length) {
-    return body as Session;
-  }
-  return null;
-};
-
-export const getServerCsrfToken = async (
-  event: RequestEvent,
-  options: NextAuthOptions
-) => {
-  const { cookie, request } = event;
-
-  const { body } = await NextAuthHandler({
-    req: {
-      action: "csrf",
-      cookies: getCookie(cookie),
-      headers: request.headers,
-      host: env.NEXTAUTH_URL,
-      method: "GET",
+    onPost: (event: any) => {
+      return handler(event);
     },
-    options,
-  });
-  return (body as { csrfToken: string }).csrfToken;
+  };
 };
 
-export type PublicProvider = {
-  id: string;
-  name: string;
-  type: string;
-  signinUrl: string;
-  callbackUrl: string;
+type LoaderFunction = Parameters<typeof loader$>[0];
+type RequestEventLoader = Parameters<LoaderFunction>[0];
+export type GetSessionResult = Promise<Session | null>;
+
+export const getSession = async (
+  req: RequestEvent | RequestEventLoader,
+  options: AuthConfig
+): GetSessionResult => {
+  options.secret ??= process.env.AUTH_SECRET;
+  options.trustHost ??= true;
+
+  // TODO check prefix
+  const url = new URL("/api/auth/session", req.url);
+
+  const response = await Auth(
+    new Request(url, { headers: req.headers }),
+    options
+  );
+
+  const { status = 200 } = response;
+
+  const data = await response.json();
+
+  if (!data || !Object.keys(data).length) return null;
+  if (status === 200) return data;
+  throw new Error(data.message);
 };
-
-export const getServerProviders = async (
-  event: RequestEvent,
-  options: NextAuthOptions
-) => {
-  const { cookie, request } = event;
-
-  const { body } = await NextAuthHandler({
-    req: {
-      action: "providers",
-      cookies: getCookie(cookie),
-      headers: request.headers,
-      host: env.NEXTAUTH_URL,
-      method: "GET",
-    },
-    options,
-  });
-  if (body && typeof body !== "string") {
-    return body as Record<string, PublicProvider>;
-  }
-  return null;
-};
-
-export const NextAuth = (
-  options: NextAuthOptions
-): { onGet: RequestHandler; onPost: RequestHandler } => ({
-  onGet: (event) => QWikNextAuthHandler(event, options),
-  onPost: (event) => QWikNextAuthHandler(event, options),
-});
-
-export { NextAuthOptions };

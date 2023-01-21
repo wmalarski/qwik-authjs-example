@@ -1,14 +1,9 @@
-import type { NextAuthOptions } from "next-auth/core/types";
+import type { AuthConfig } from "@auth/core";
 // import Auth0Provider from "next-auth/providers/auth0";
-import CredentialsProvider from "next-auth/providers/credentials";
+import Credentials from "@auth/core/providers/credentials";
 import { env } from "../env";
 
-const Credentials =
-  typeof CredentialsProvider === "function"
-    ? CredentialsProvider
-    : ((CredentialsProvider as any).default as typeof CredentialsProvider);
-
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthConfig = {
   secret: env.NEXTAUTH_SECRET,
   providers: [
     // Auth0Provider({
@@ -31,6 +26,6 @@ export const authOptions: NextAuthOptions = {
         }
         return null;
       },
-    }),
+    }) as any,
   ],
 };
