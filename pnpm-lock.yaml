@@ -18,7 +18,6 @@ specifiers:
   eslint-plugin-qwik: 0.16.2
   express: 4.18.2
   prettier: 2.8.3
-  set-cookie-parser: ^2.5.1
   typescript: 4.9.4
   undici: 5.15.1
   vite: 4.0.4
@@ -28,7 +27,6 @@ specifiers:
 dependencies:
   '@auth/core': 0.2.5
   cookie: 0.5.0
-  set-cookie-parser: 2.5.1
   undici: 5.15.1
   zod: 3.20.2
 
@@ -2385,10 +2383,6 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
-
-  /set-cookie-parser/2.5.1:
-    resolution: {integrity: sha512-1jeBGaKNGdEq4FgIrORu/N570dwoPYio8lSoYLWmX7sQ//0JY08Xh9o5pBcgmHQ/MbsYp/aZnOe1s1lIsbLprQ==}
-    dev: false
 
   /setprototypeof/1.2.0:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}

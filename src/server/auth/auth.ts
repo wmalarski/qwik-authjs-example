@@ -1,9 +1,7 @@
 import { Auth, type AuthConfig } from "@auth/core";
 import { AuthAction, Session } from "@auth/core/types";
 import type { RequestEvent } from "@builder.io/qwik-city";
-import { serialize } from "cookie";
 import crypto from "crypto";
-import { parseString, splitCookiesString } from "set-cookie-parser";
 import type { RequestEventLoader } from "../types";
 
 // This solves issue with @auth/core I have.
@@ -11,15 +9,24 @@ import type { RequestEventLoader } from "../types";
 // don't know why it' happening
 global.crypto = crypto.webcrypto;
 
+export interface QwikAuthConfig extends AuthConfig {
+  /**
+   * Defines the base path for the auth routes.
+   * @default '/api/auth'
+   */
+  prefix?: string;
+}
+
 export const getSession = async (
-  req: RequestEvent | RequestEventLoader,
-  options: AuthConfig
+  event: RequestEvent | RequestEventLoader,
+  options: QwikAuthConfig
 ): Promise<Session | null> => {
   options.secret ??= process.env.AUTH_SECRET;
   options.trustHost ??= true;
+  options.prefix ??= "/api/auth";
 
-  const url = new URL("/api/auth/session", req.url);
-  const request = new Request(url, { headers: req.headers });
+  const url = new URL(`${options.prefix}/session`, event.url);
+  const request = new Request(url, { headers: event.request.headers });
   const response = await Auth(request, options);
 
   const { status = 200 } = response;
@@ -29,14 +36,6 @@ export const getSession = async (
   if (status === 200) return data;
   throw new Error(data.message);
 };
-
-export interface QwikAuthConfig extends AuthConfig {
-  /**
-   * Defines the base path for the auth routes.
-   * @default '/api/auth'
-   */
-  prefix?: string;
-}
 
 const actions: AuthAction[] = [
   "providers",
@@ -49,30 +48,6 @@ const actions: AuthAction[] = [
   "error",
 ];
 
-// currently multiple cookies are not supported, so we keep the next-auth.pkce.code_verifier cookie for now:
-// because it gets updated anyways
-// src: https://github.com/solidjs/solid-start/issues/293
-const getSetCookieCallback = (cookie?: string | null) => {
-  if (!cookie) return;
-  const splitCookie = splitCookiesString(cookie);
-
-  console.log({ splitCookie });
-
-  for (const cookName of [
-    "__Secure-next-auth.session-token",
-    "next-auth.session-token",
-    "next-auth.pkce.code_verifier",
-    "__Secure-next-auth.pkce.code_verifier",
-  ]) {
-    const temp = splitCookie.find((e) => e.startsWith(`${cookName}=`));
-    if (temp) {
-      return parseString(temp);
-    }
-  }
-  console.log({ cookie, splitCookie });
-  return parseString(splitCookie?.[0] ?? ""); // just return the first cookie if no session token is found
-};
-
 const QwikAuthHandler = (prefix: string, authOptions: QwikAuthConfig) => {
   return async (event: RequestEvent) => {
     const { request, url } = event;
@@ -82,49 +57,19 @@ const QwikAuthHandler = (prefix: string, authOptions: QwikAuthConfig) => {
       .split("/")[0] as AuthAction;
 
     if (!actions.includes(action) || !url.pathname.startsWith(prefix + "/")) {
+      event.error(400, "Invalid request");
       return;
     }
 
     const res = await Auth(request as any, authOptions);
 
-    console.log({
-      res,
-      action,
-      body: res.body,
-      red: res.redirected,
-      d: res.url,
+    const headers = res.clone().headers;
+    Array.from(headers.entries()).map(([key, value]) => {
+      event.headers.append(key, value);
     });
 
-    if (["callback", "signin", "signout"].includes(action)) {
-      const resCookies = res.clone().headers.get("Set-Cookie");
-      console.log({ resCookies });
-      if (resCookies) {
-        event.cookie.set("Set-Cookie", resCookies);
-      }
-
-      const parsedCookie = getSetCookieCallback(resCookies);
-      //   res.headers.delete("Set-Cookie");
-
-      console.log({ parsedCookie });
-
-      if (parsedCookie) {
-        res.headers.set(
-          "Set-Cookie",
-          serialize(parsedCookie.name, parsedCookie.value, parsedCookie as any)
-        );
-      }
-    }
-
-    const json = res.json();
-
-    console.log({ json, status: res.status });
-
-    event.status(res.status);
-    event.json(res.status, json);
-
-    console.log({ res, headers: res.headers, r: res.url });
-
-    return res;
+    const text = await res.text();
+    event.html(res.status, text);
   };
 };
 

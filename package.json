@@ -45,7 +45,6 @@
   "dependencies": {
     "@auth/core": "0.2.5",
     "cookie": "^0.5.0",
-    "set-cookie-parser": "^2.5.1",
     "undici": "5.15.1",
     "zod": "^3.20.2"
   }
