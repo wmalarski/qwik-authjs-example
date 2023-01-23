@@ -1,34 +1,14 @@
 import { Auth, type AuthConfig } from "@auth/core";
-import { AuthAction, Session } from "@auth/core/types";
-import type { RequestEvent } from "@builder.io/qwik-city";
+import { AuthAction } from "@auth/core/types";
 import { serialize } from "cookie";
 import crypto from "crypto";
 import { parseString, splitCookiesString } from "set-cookie-parser";
-import type { RequestEventLoader } from "../types";
+import type { ActionFunction } from "../types";
 
 // This solves issue with @auth/core I have.
 // [vite] Internal server error: crypto is not defined
 // don't know why it' happening
 global.crypto = crypto.webcrypto;
-
-export const getSession = async (
-  req: RequestEvent | RequestEventLoader,
-  options: AuthConfig
-): Promise<Session | null> => {
-  options.secret ??= process.env.AUTH_SECRET;
-  options.trustHost ??= true;
-
-  const url = new URL("/api/auth/session", req.url);
-  const request = new Request(url, { headers: req.headers });
-  const response = await Auth(request, options);
-
-  const { status = 200 } = response;
-  const data = await response.json();
-
-  if (!data || !Object.keys(data).length) return null;
-  if (status === 200) return data;
-  throw new Error(data.message);
-};
 
 export interface QwikAuthConfig extends AuthConfig {
   /**
@@ -37,17 +17,6 @@ export interface QwikAuthConfig extends AuthConfig {
    */
   prefix?: string;
 }
-
-const actions: AuthAction[] = [
-  "providers",
-  "session",
-  "csrf",
-  "signin",
-  "signout",
-  "callback",
-  "verify-request",
-  "error",
-];
 
 // currently multiple cookies are not supported, so we keep the next-auth.pkce.code_verifier cookie for now:
 // because it gets updated anyways
@@ -73,19 +42,12 @@ const getSetCookieCallback = (cookie?: string | null) => {
   return parseString(splitCookie?.[0] ?? ""); // just return the first cookie if no session token is found
 };
 
-const QwikAuthHandler = (prefix: string, authOptions: QwikAuthConfig) => {
-  return async (event: RequestEvent) => {
-    const { request, url } = event;
-
-    const action = url.pathname
-      .slice(prefix.length + 1)
-      .split("/")[0] as AuthAction;
-
-    if (!actions.includes(action) || !url.pathname.startsWith(prefix + "/")) {
-      return;
-    }
-
-    const res = await Auth(request as any, authOptions);
+const QwikAuthActionHandler = (
+  action: AuthAction,
+  authOptions: QwikAuthConfig
+): ActionFunction => {
+  return async (_form, event) => {
+    const res = await Auth(event.request as any, authOptions);
 
     console.log({
       res,
@@ -115,21 +77,21 @@ const QwikAuthHandler = (prefix: string, authOptions: QwikAuthConfig) => {
       }
     }
 
-    const json = res.json();
-
-    console.log({ json, status: res.status });
-
     event.status(res.status);
-    event.json(res.status, json);
 
-    console.log({ res, headers: res.headers, r: res.url });
+    event.send(res.status, "");
+
+    // console.log({ res, body: res.body, headers: res.headers, r: res.url });
 
     return res;
   };
 };
 
-export const QwikAuth = (config: QwikAuthConfig) => {
-  const { prefix = "/api/auth", ...authOptions } = config;
+export const QwikAuthAction = (
+  action: AuthAction,
+  config: QwikAuthConfig
+): ActionFunction => {
+  const authOptions = { ...config };
 
   authOptions.secret ??= process.env.AUTH_SECRET;
 
@@ -139,7 +101,5 @@ export const QwikAuth = (config: QwikAuthConfig) => {
     process.env.NODE_ENV !== "production"
   );
 
-  const handler = QwikAuthHandler(prefix, authOptions);
-
-  return { onGet: handler, onPost: handler };
+  return QwikAuthActionHandler(action, authOptions);
 };
