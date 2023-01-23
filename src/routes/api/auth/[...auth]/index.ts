@@ -1,4 +1,4 @@
-import { QwikAuth } from "~/server/auth/auth";
+import { QwikAuth } from "~/lib";
 import { authOptions } from "~/server/auth/options";
 
 export const { onGet, onPost } = QwikAuth(authOptions);

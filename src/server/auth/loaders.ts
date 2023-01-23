@@ -1,6 +1,6 @@
 import type { Session } from "@auth/core/types";
+import { getSession } from "~/lib";
 import type { RequestEventLoader } from "../types";
-import { getSession } from "./auth";
 import { authOptions } from "./options";
 
 export const getSharedSession = async (
