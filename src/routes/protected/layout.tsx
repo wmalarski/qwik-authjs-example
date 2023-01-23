@@ -1,18 +1,22 @@
 import { component$, Slot } from "@builder.io/qwik";
-import { useEndpoint } from "@builder.io/qwik-city";
-import { withProtectedSession } from "~/server/auth/withSession";
-import { endpointBuilder } from "~/utils/endpointBuilder";
+import { loader$ } from "@builder.io/qwik-city";
+import { getSharedSession } from "~/server/auth/loaders";
 import { useUserContextProvider } from "./UserContext";
 
-export const onGet = endpointBuilder()
-  .use(withProtectedSession())
-  .query((event) => {
-    return event.session.user;
-  });
+export const userLoader = loader$(async (event) => {
+  const session = await getSharedSession(event);
+
+  if (!session) {
+    throw event.redirect(302, "/api/auth/signin");
+  }
+
+  return session.user;
+});
 
 export default component$(() => {
-  const resource = useEndpoint<typeof onGet>();
-  useUserContextProvider(resource);
+  const user = userLoader.use();
+
+  useUserContextProvider(user);
 
   return <Slot />;
 });

@@ -1,12 +1,12 @@
+import { Session } from "@auth/core/types";
 import {
   createContext,
-  ResourceReturn,
+  Signal,
   useContext,
   useContextProvider,
 } from "@builder.io/qwik";
-import type { Session } from "next-auth/core/types";
 
-type SessionContextState = ResourceReturn<Session | null>;
+type SessionContextState = Signal<Session | null>;
 
 const SessionContext = createContext<SessionContextState>("session-context");
 

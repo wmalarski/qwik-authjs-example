@@ -1,8 +1,12 @@
-# Qwik City + Next Auth ⚡️
+# Qwik City + Auth.js ⚡️
 
-## TODO
+This repo contains integration between Qwik-City and Auth.js.
 
-- [ ] - fix saving cookies when new qwik release cookies api
+Integration code is located in "/src/lib" folder.
+
+Integration is not tested yet with enough providers. It's more of proof of concept.
+
+Code is based on existing integrations - especially [Solid-Start integration](https://github.com/nextauthjs/next-auth/tree/main/packages/frameworks-solid-start).
 
 ## Tools
 
@@ -76,8 +80,8 @@ npm run build # or `yarn build`
 
 This app has a minimal [Express server](https://expressjs.com/) implementation. After running a full build, you can preview the build using the command:
 
-```
-npm run serve
+```graphql
+pnpm run serve
 ```
 
 Then visit [http://localhost:8080/](http://localhost:8080/)
