@@ -73,7 +73,7 @@ const QwikAuthHandler = (prefix: string, authOptions: QwikAuthConfig) => {
   };
 };
 
-export const QwikAuth = (config: QwikAuthConfig) => {
+export const QwikAuth = (event: RequestEvent, config: QwikAuthConfig) => {
   const { prefix = "/api/auth", ...authOptions } = config;
 
   authOptions.secret ??= process.env.AUTH_SECRET;
@@ -84,7 +84,5 @@ export const QwikAuth = (config: QwikAuthConfig) => {
     process.env.NODE_ENV !== "production"
   );
 
-  const handler = QwikAuthHandler(prefix, authOptions);
-
-  return { onGet: handler, onPost: handler };
+  return QwikAuthHandler(prefix, authOptions)(event);
 };

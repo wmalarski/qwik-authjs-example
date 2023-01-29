@@ -1,5 +1,5 @@
 import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead } from "@builder.io/qwik-city";
+import { DocumentHead, Link } from "@builder.io/qwik-city";
 import { useUserContext } from "./UserContext";
 
 export default component$(() => {
@@ -8,7 +8,7 @@ export default component$(() => {
   return (
     <div>
       <h1>Protected</h1>
-      <a href="/">Home</a>
+      <Link href="/">Home</Link>
       <Resource
         value={userResource}
         onPending={() => <span>Pending</span>}

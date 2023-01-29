@@ -1,5 +1,5 @@
 import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead } from "@builder.io/qwik-city";
+import { DocumentHead, Link } from "@builder.io/qwik-city";
 import { signIn, signOut } from "~/lib/client";
 import { useSessionContext } from "./SessionContext";
 
@@ -11,7 +11,7 @@ export default component$(() => {
       <h1>
         Welcome to Qwik <span class="lightning">⚡️</span>
       </h1>
-      <a href="/protected">Protected</a>
+      <Link href="/protected">Protected</Link>
       <Resource
         value={sessionResource}
         onPending={() => <span>Pending</span>}
