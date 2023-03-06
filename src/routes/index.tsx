@@ -1,14 +1,21 @@
 import { component$ } from "@builder.io/qwik";
-import { DocumentHead, Link, loader$ } from "@builder.io/qwik-city";
-import { signIn, signOut } from "~/lib/client";
-import { getSharedSession } from "~/server/auth/loaders";
+import {
+  Form,
+  Link,
+  routeLoader$,
+  type DocumentHead,
+} from "@builder.io/qwik-city";
+import { getSharedSession, useAuthSignin, useAuthSignout } from "~/server/auth";
 
-export const sessionLoader = loader$(async (event) => {
+export const useSessionLoader = routeLoader$(async (event) => {
   return getSharedSession(event);
 });
 
 export default component$(() => {
-  const sessionResource = sessionLoader.use();
+  const signOut = useAuthSignout();
+  const signIn = useAuthSignin();
+
+  const sessionResource = useSessionLoader();
 
   return (
     <div>
@@ -20,17 +27,15 @@ export default component$(() => {
       <div>
         <pre>{JSON.stringify(sessionResource.value, null, 2)}</pre>
         <h2>Link method</h2>
-        {sessionResource.value ? (
-          <a href="/api/auth/signout">Sing Out</a>
-        ) : (
-          <a href="/api/auth/signin">Sign In</a>
-        )}
-
         <h2>Client side method</h2>
         {sessionResource.value ? (
-          <button onClick$={() => signOut()}>Sign Out</button>
+          <Form action={signOut}>
+            <button>Sign Out</button>
+          </Form>
         ) : (
-          <button onClick$={() => signIn()}>Sign In</button>
+          <Form action={signIn}>
+            <button>Sign In</button>
+          </Form>
         )}
       </div>
     </div>

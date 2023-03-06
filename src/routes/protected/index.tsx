@@ -1,8 +1,8 @@
 import { component$ } from "@builder.io/qwik";
-import { DocumentHead, Link, loader$ } from "@builder.io/qwik-city";
-import { getSharedSession } from "~/server/auth/loaders";
+import { Link, routeLoader$, type DocumentHead } from "@builder.io/qwik-city";
+import { getSharedSession } from "~/server/auth";
 
-export const userLoader = loader$(async (event) => {
+export const useUserLoader = routeLoader$(async (event) => {
   const session = await getSharedSession(event);
 
   if (!session) {
@@ -13,7 +13,7 @@ export const userLoader = loader$(async (event) => {
 });
 
 export default component$(() => {
-  const user = userLoader.use();
+  const user = useUserLoader();
 
   return (
     <div>
