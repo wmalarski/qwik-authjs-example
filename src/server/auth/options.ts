@@ -26,6 +26,6 @@ export const authOptions: AuthConfig = {
         }
         return null;
       },
-    }) as any,
+    }),
   ],
 };

@@ -1,10 +1,14 @@
-import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead, Link } from "@builder.io/qwik-city";
+import { component$ } from "@builder.io/qwik";
+import { DocumentHead, Link, loader$ } from "@builder.io/qwik-city";
 import { signIn, signOut } from "~/lib/client";
-import { useSessionContext } from "./SessionContext";
+import { getSharedSession } from "~/server/auth/loaders";
+
+export const sessionLoader = loader$(async (event) => {
+  return getSharedSession(event);
+});
 
 export default component$(() => {
-  const sessionResource = useSessionContext();
+  const sessionResource = sessionLoader.use();
 
   return (
     <div>
@@ -12,28 +16,23 @@ export default component$(() => {
         Welcome to Qwik <span class="lightning">⚡️</span>
       </h1>
       <Link href="/protected">Protected</Link>
-      <Resource
-        value={sessionResource}
-        onPending={() => <span>Pending</span>}
-        onRejected={() => <span>Rejected</span>}
-        onResolved={(data) => (
-          <div>
-            <pre>{JSON.stringify(data, null, 2)}</pre>
-            <h2>Link method</h2>
-            {data ? (
-              <a href="/api/auth/signout">Sing Out</a>
-            ) : (
-              <a href="/api/auth/signin">Sign In</a>
-            )}
-            <h2>Client side method</h2>
-            {data ? (
-              <button onClick$={() => signOut()}>Sign Out</button>
-            ) : (
-              <button onClick$={() => signIn()}>Sign In</button>
-            )}
-          </div>
+
+      <div>
+        <pre>{JSON.stringify(sessionResource.value, null, 2)}</pre>
+        <h2>Link method</h2>
+        {sessionResource.value ? (
+          <a href="/api/auth/signout">Sing Out</a>
+        ) : (
+          <a href="/api/auth/signin">Sign In</a>
         )}
-      />
+
+        <h2>Client side method</h2>
+        {sessionResource.value ? (
+          <button onClick$={() => signOut()}>Sign Out</button>
+        ) : (
+          <button onClick$={() => signIn()}>Sign In</button>
+        )}
+      </div>
     </div>
   );
 });

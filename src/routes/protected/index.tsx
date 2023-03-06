@@ -1,25 +1,28 @@
-import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead, Link } from "@builder.io/qwik-city";
-import { useUserContext } from "./UserContext";
+import { component$ } from "@builder.io/qwik";
+import { DocumentHead, Link, loader$ } from "@builder.io/qwik-city";
+import { getSharedSession } from "~/server/auth/loaders";
+
+export const userLoader = loader$(async (event) => {
+  const session = await getSharedSession(event);
+
+  if (!session) {
+    throw event.redirect(302, "/api/auth/signin");
+  }
+
+  return session.user;
+});
 
 export default component$(() => {
-  const userResource = useUserContext();
+  const user = userLoader.use();
 
   return (
     <div>
       <h1>Protected</h1>
       <Link href="/">Home</Link>
-      <Resource
-        value={userResource}
-        onPending={() => <span>Pending</span>}
-        onRejected={() => <span>Rejected</span>}
-        onResolved={(data) => (
-          <div>
-            <h2>User</h2>
-            <pre>{JSON.stringify(data, null, 2)}</pre>
-          </div>
-        )}
-      />
+      <div>
+        <h2>User</h2>
+        <pre>{JSON.stringify(user.value, null, 2)}</pre>
+      </div>
     </div>
   );
 });
