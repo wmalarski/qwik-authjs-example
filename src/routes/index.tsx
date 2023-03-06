@@ -15,7 +15,7 @@ export default component$(() => {
   const signOut = useAuthSignout();
   const signIn = useAuthSignin();
 
-  const sessionResource = useSessionLoader();
+  const session = useSessionLoader();
 
   return (
     <div>
@@ -25,10 +25,10 @@ export default component$(() => {
       <Link href="/protected">Protected</Link>
 
       <div>
-        <pre>{JSON.stringify(sessionResource.value, null, 2)}</pre>
+        <pre>{JSON.stringify(session.value, null, 2)}</pre>
         <h2>Link method</h2>
         <h2>Client side method</h2>
-        {sessionResource.value ? (
+        {session.value ? (
           <Form action={signOut}>
             <button>Sign Out</button>
           </Form>
