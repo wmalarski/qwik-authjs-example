@@ -2,21 +2,56 @@ import { component$ } from "@builder.io/qwik";
 import {
   Form,
   Link,
+  routeAction$,
   routeLoader$,
+  z,
+  zod$,
   type DocumentHead,
 } from "@builder.io/qwik-city";
-import { getSharedSession } from "~/server/auth";
-import { useAuthSignin, useAuthSignout } from "./layout";
+import { authSignin, authSignout, getAuthSession } from "~/lib/qwik-auth";
+import { authOptions } from "~/server/auth";
 
-export const useSessionLoader = routeLoader$(async (event) => {
-  return getSharedSession(event);
+export const useAuthSignin = routeAction$(
+  async ({ providerId, callbackUrl, ...rest }, event) => {
+    authSignin({
+      callbackUrl,
+      config: authOptions(event),
+      event,
+      providerId,
+      rest,
+    });
+  },
+  zod$({
+    callbackUrl: z.string().optional(),
+    providerId: z.string().optional(),
+  })
+);
+
+export const useAuthSignout = routeAction$(
+  async ({ callbackUrl }, event) => {
+    authSignout({
+      callbackUrl,
+      config: authOptions(event),
+      event,
+    });
+  },
+  zod$({
+    callbackUrl: z.string().optional(),
+  })
+);
+
+export const useAuthSession = routeLoader$((event) => {
+  return getAuthSession({
+    config: authOptions(event),
+    event,
+  });
 });
 
 export default component$(() => {
   const signOut = useAuthSignout();
   const signIn = useAuthSignin();
 
-  const session = useSessionLoader();
+  const session = useAuthSession();
 
   return (
     <div>

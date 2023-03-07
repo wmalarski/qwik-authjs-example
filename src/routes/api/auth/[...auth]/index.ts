@@ -1,4 +1,10 @@
-import { serverAuth$ } from "@builder.io/qwik-auth";
-import { authOptions } from "~/server/options";
+import type { RequestEvent } from "@builder.io/qwik-city";
+import { handleOnRequest } from "~/lib/qwik-auth";
+import { authOptions } from "~/server/auth";
 
-export const { onRequest } = serverAuth$((event) => authOptions(event));
+export const onRequest = async (req: RequestEvent) => {
+  handleOnRequest({
+    config: authOptions(req),
+    event: req,
+  });
+};
