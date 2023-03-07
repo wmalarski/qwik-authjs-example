@@ -1,10 +1,7 @@
 import type { Session } from "@auth/core/types";
-import { getSessionData, serverAuth$ } from "@builder.io/qwik-auth";
+import { getSessionData } from "@builder.io/qwik-auth";
 import type { RequestEventCommon } from "@builder.io/qwik-city";
 import { authOptions } from "./options";
-
-export const { onRequest, useAuthSession, useAuthSignin, useAuthSignout } =
-  serverAuth$((event) => authOptions(event));
 
 export const getSharedSession = async (
   event: RequestEventCommon
@@ -15,8 +12,7 @@ export const getSharedSession = async (
     return promise;
   }
 
-  const options = authOptions(event);
-  const shared = getSessionData(event.request, options);
+  const shared = getSessionData(event.request, authOptions(event));
   event.sharedMap.set("__auth_session", shared);
 
   return shared;

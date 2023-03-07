@@ -1,6 +1,4 @@
-import type { RequestEvent } from "@builder.io/qwik-city";
+import { serverAuth$ } from "@builder.io/qwik-auth";
+import { authOptions } from "~/server/options";
 
-export const onRequest = async (req: RequestEvent) => {
-  const { onRequest: onAuthRequest } = await import("~/server/auth");
-  return onAuthRequest(req);
-};
+export const { onRequest } = serverAuth$((event) => authOptions(event));

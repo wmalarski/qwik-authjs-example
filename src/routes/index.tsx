@@ -5,7 +5,8 @@ import {
   routeLoader$,
   type DocumentHead,
 } from "@builder.io/qwik-city";
-import { getSharedSession, useAuthSignin, useAuthSignout } from "~/server/auth";
+import { getSharedSession } from "~/server/auth";
+import { useAuthSignin, useAuthSignout } from "./layout";
 
 export const useSessionLoader = routeLoader$(async (event) => {
   return getSharedSession(event);
