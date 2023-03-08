@@ -1,3 +1,9 @@
 {
-  "cSpell.words": ["NEXTAUTH", "qwik", "signin", "signout"]
+  "cSpell.words": [
+    "NEXTAUTH",
+    "qwik",
+    "signin",
+    "signout",
+    "undici"
+  ]
 }

@@ -1,10 +1,57 @@
-import { component$, Resource } from "@builder.io/qwik";
-import { DocumentHead, Link } from "@builder.io/qwik-city";
-import { signIn, signOut } from "~/lib/client";
-import { useSessionContext } from "./SessionContext";
+import { component$ } from "@builder.io/qwik";
+import {
+  Form,
+  globalAction$,
+  Link,
+  routeLoader$,
+  z,
+  zod$,
+  type DocumentHead,
+} from "@builder.io/qwik-city";
+import { authSignin, authSignout, getAuthSession } from "~/lib/qwik-auth";
+import { authOptions } from "~/server/auth";
+
+export const useAuthSignin = globalAction$(
+  async ({ providerId, callbackUrl, ...rest }, event) => {
+    await authSignin({
+      callbackUrl,
+      config: authOptions(event),
+      event,
+      providerId,
+      rest,
+    });
+  },
+  zod$({
+    callbackUrl: z.string().optional(),
+    providerId: z.string().optional(),
+  })
+);
+
+export const useAuthSignout = globalAction$(
+  async ({ callbackUrl }, event) => {
+    await authSignout({
+      callbackUrl,
+      config: authOptions(event),
+      event,
+    });
+  },
+  zod$({
+    callbackUrl: z.string().optional(),
+  })
+);
+
+export const useAuthSession = routeLoader$((event) => {
+  return getAuthSession({
+    config: authOptions(event),
+    event,
+  });
+});
 
 export default component$(() => {
-  const sessionResource = useSessionContext();
+  const signOut = useAuthSignout();
+  const signIn = useAuthSignin();
+
+  const session = useAuthSession();
 
   return (
     <div>
@@ -12,28 +59,24 @@ export default component$(() => {
         Welcome to Qwik <span class="lightning">⚡️</span>
       </h1>
       <Link href="/protected">Protected</Link>
-      <Resource
-        value={sessionResource}
-        onPending={() => <span>Pending</span>}
-        onRejected={() => <span>Rejected</span>}
-        onResolved={(data) => (
-          <div>
-            <pre>{JSON.stringify(data, null, 2)}</pre>
-            <h2>Link method</h2>
-            {data ? (
-              <a href="/api/auth/signout">Sing Out</a>
-            ) : (
-              <a href="/api/auth/signin">Sign In</a>
-            )}
-            <h2>Client side method</h2>
-            {data ? (
-              <button onClick$={() => signOut()}>Sign Out</button>
-            ) : (
-              <button onClick$={() => signIn()}>Sign In</button>
-            )}
-          </div>
+
+      <div>
+        <pre>{JSON.stringify(session.value, null, 2)}</pre>
+        <h2>Client side method</h2>
+        {session.value ? (
+          <Form action={signOut}>
+            <button type="submit">Sign Out</button>
+            <pre>{JSON.stringify(signOut.isRunning, null, 2)}</pre>
+            <pre>{JSON.stringify(signOut.value, null, 2)}</pre>
+          </Form>
+        ) : (
+          <Form action={signIn}>
+            <button type="submit">Sign In</button>
+            <pre>{JSON.stringify(signOut.isRunning, null, 2)}</pre>
+            <pre>{JSON.stringify(signOut.value, null, 2)}</pre>
+          </Form>
         )}
-      />
+      </div>
     </div>
   );
 });
