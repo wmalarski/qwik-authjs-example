@@ -1,8 +1,8 @@
 import { component$ } from "@builder.io/qwik";
 import {
   Form,
+  globalAction$,
   Link,
-  routeAction$,
   routeLoader$,
   z,
   zod$,
@@ -11,9 +11,9 @@ import {
 import { authSignin, authSignout, getAuthSession } from "~/lib/qwik-auth";
 import { authOptions } from "~/server/auth";
 
-export const useAuthSignin = routeAction$(
+export const useAuthSignin = globalAction$(
   async ({ providerId, callbackUrl, ...rest }, event) => {
-    authSignin({
+    await authSignin({
       callbackUrl,
       config: authOptions(event),
       event,
@@ -27,9 +27,9 @@ export const useAuthSignin = routeAction$(
   })
 );
 
-export const useAuthSignout = routeAction$(
+export const useAuthSignout = globalAction$(
   async ({ callbackUrl }, event) => {
-    authSignout({
+    await authSignout({
       callbackUrl,
       config: authOptions(event),
       event,
@@ -62,15 +62,18 @@ export default component$(() => {
 
       <div>
         <pre>{JSON.stringify(session.value, null, 2)}</pre>
-        <h2>Link method</h2>
         <h2>Client side method</h2>
         {session.value ? (
           <Form action={signOut}>
-            <button>Sign Out</button>
+            <button type="submit">Sign Out</button>
+            <pre>{JSON.stringify(signOut.isRunning, null, 2)}</pre>
+            <pre>{JSON.stringify(signOut.value, null, 2)}</pre>
           </Form>
         ) : (
           <Form action={signIn}>
-            <button>Sign In</button>
+            <button type="submit">Sign In</button>
+            <pre>{JSON.stringify(signOut.isRunning, null, 2)}</pre>
+            <pre>{JSON.stringify(signOut.value, null, 2)}</pre>
           </Form>
         )}
       </div>

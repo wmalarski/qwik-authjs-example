@@ -21,34 +21,6 @@ const actions: AuthAction[] = [
   "error",
 ];
 
-const authAction = async (
-  body: URLSearchParams | undefined,
-  req: RequestEventCommon,
-  path: string,
-  authOptions: QwikAuthConfig
-) => {
-  const request = new Request(new URL(path, req.request.url), {
-    method: req.request.method,
-    headers: req.request.headers,
-    body: body,
-  });
-  request.headers.set("content-type", "application/x-www-form-urlencoded");
-  const res = await Auth(request, {
-    ...authOptions,
-    skipCSRFCheck,
-  });
-  res.headers.forEach((value, key) => {
-    req.headers.set(key, value);
-  });
-  fixCookies(req);
-
-  try {
-    return await res.json();
-  } catch (error) {
-    return await res.text();
-  }
-};
-
 const fixCookies = (req: RequestEventCommon) => {
   req.headers.set("set-cookie", req.headers.get("set-cookie") || "");
   const cookie = req.headers.get("set-cookie");
@@ -58,6 +30,34 @@ const fixCookies = (req: RequestEventCommon) => {
       const { name, value, ...rest } = parseString(cookie);
       req.cookie.set(name, value, rest as any);
     });
+  }
+};
+
+const authAction = async (
+  body: URLSearchParams | undefined,
+  event: RequestEventCommon,
+  path: string,
+  authOptions: QwikAuthConfig
+) => {
+  const request = new Request(new URL(path, event.request.url), {
+    method: event.request.method,
+    headers: event.request.headers,
+    body,
+  });
+  request.headers.set("content-type", "application/x-www-form-urlencoded");
+  const res = await Auth(request, {
+    ...authOptions,
+    skipCSRFCheck,
+  });
+  res.headers.forEach((value, key) => {
+    event.headers.set(key, value);
+  });
+  fixCookies(event);
+
+  try {
+    return await res.json();
+  } catch (error) {
+    return await res.text();
   }
 };
 
