@@ -1,48 +1,24 @@
 import { component$ } from "@builder.io/qwik";
 import {
   Form,
-  globalAction$,
   Link,
   routeLoader$,
-  z,
-  zod$,
   type DocumentHead,
 } from "@builder.io/qwik-city";
-import { authSignin, authSignout, getAuthSession } from "~/lib/qwik-auth";
-import { authOptions } from "~/server/auth";
+import {
+  authSigninAction$,
+  authSignoutAction$,
+  getAuthSession,
+} from "~/lib/qwik-auth";
+import { authConfig } from "~/server/auth";
 
-export const useAuthSignin = globalAction$(
-  async ({ providerId, callbackUrl, ...rest }, event) => {
-    await authSignin({
-      callbackUrl,
-      config: authOptions(event),
-      event,
-      providerId,
-      rest,
-    });
-  },
-  zod$({
-    callbackUrl: z.string().optional(),
-    providerId: z.string().optional(),
-  })
-);
+export const useAuthSignin = authSigninAction$((event) => authConfig(event));
 
-export const useAuthSignout = globalAction$(
-  async ({ callbackUrl }, event) => {
-    await authSignout({
-      callbackUrl,
-      config: authOptions(event),
-      event,
-    });
-  },
-  zod$({
-    callbackUrl: z.string().optional(),
-  })
-);
+export const useAuthSignout = authSignoutAction$((event) => authConfig(event));
 
 export const useAuthSession = routeLoader$((event) => {
   return getAuthSession({
-    config: authOptions(event),
+    config: authConfig(event),
     event,
   });
 });

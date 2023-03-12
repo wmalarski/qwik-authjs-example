@@ -6,7 +6,7 @@ Integration code is located in "/src/lib" folder.
 
 Integration is not tested yet with enough providers. It's more of proof of concept.
 
-Code is based on existing integrations - especially [Solid-Start integration](https://github.com/nextauthjs/next-auth/tree/main/packages/frameworks-solid-start).
+Code is based on [@builder.io/qwik-auth](https://github.com/BuilderIO/qwik/blob/main/packages/qwik-auth/src/index.ts). I decided no to use official integration yet because of issues with leaking server side code to browser -> this could be my fault but it's not happening with my approach.
 
 ## Tools
 

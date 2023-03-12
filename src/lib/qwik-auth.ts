@@ -1,6 +1,10 @@
 import { Auth, skipCSRFCheck } from "@auth/core";
 import type { AuthAction, AuthConfig, Session } from "@auth/core/types";
+import { $, implicit$FirstArg, type QRL } from "@builder.io/qwik";
 import {
+  globalAction$,
+  z,
+  zod$,
   type RequestEvent,
   type RequestEventAction,
   type RequestEventCommon,
@@ -88,48 +92,57 @@ const getSessionData = async (
   throw new Error(data.message);
 };
 
-type AuthSigninArgs = {
-  callbackUrl?: string;
-  config: QwikAuthConfig;
-  providerId?: string;
-  event: RequestEventAction;
-  rest?: Record<string, any>;
+export const authSigninActionQrl = (
+  configQrl: QRL<(event: RequestEventAction) => AuthConfig>
+) => {
+  // eslint-disable-next-line qwik/loader-location
+  return globalAction$(
+    async ({ providerId, callbackUrl, ...rest }, event) => {
+      const config = await configQrl(event);
+
+      callbackUrl ??= getCurrentPageForAction(event);
+      const body = new URLSearchParams({ callbackUrl });
+
+      Object.entries(rest || {}).forEach(([key, value]) => {
+        body.set(key, String(value));
+      });
+
+      const pathname =
+        "/api/auth/signin" + (providerId ? `/${providerId}` : "");
+      const data = await authAction(body, event, pathname, config);
+
+      if (data.url) {
+        throw event.redirect(301, data.url);
+      }
+    },
+    zod$({
+      callbackUrl: z.string().optional(),
+      providerId: z.string().optional(),
+    })
+  );
 };
 
-export const authSignin = async ({
-  callbackUrl,
-  config,
-  providerId,
-  event,
-  rest,
-}: AuthSigninArgs) => {
-  callbackUrl ??= getCurrentPageForAction(event);
-  const body = new URLSearchParams({ callbackUrl });
-  Object.entries(rest || {}).forEach(([key, value]) => {
-    body.set(key, String(value));
-  });
-  const pathname = "/api/auth/signin" + (providerId ? `/${providerId}` : "");
-  const data = await authAction(body, event, pathname, config);
-  if (data.url) {
-    throw event.redirect(301, data.url);
-  }
+export const authSigninAction$ = implicit$FirstArg(authSigninActionQrl);
+
+export const authSignoutActionQrl = (
+  configQrl: QRL<(event: RequestEventAction) => AuthConfig>
+) => {
+  // eslint-disable-next-line qwik/loader-location
+  return globalAction$(
+    async ({ callbackUrl }, event) => {
+      const config = await configQrl(event);
+
+      callbackUrl ??= getCurrentPageForAction(event);
+      const body = new URLSearchParams({ callbackUrl });
+      await authAction(body, event, `/api/auth/signout`, config);
+    },
+    zod$({
+      callbackUrl: z.string().optional(),
+    })
+  );
 };
 
-type AuthSignoutArgs = {
-  callbackUrl?: string;
-  config: QwikAuthConfig;
-  event: RequestEventAction;
-};
-
-export const authSignout = async ({
-  callbackUrl,
-  event,
-  config,
-}: AuthSignoutArgs) => {
-  callbackUrl ??= getCurrentPageForAction(event);
-  const body = new URLSearchParams({ callbackUrl });
-  await authAction(body, event, `/api/auth/signout`, config);
-};
+export const authSignoutAction$ = implicit$FirstArg(authSignoutActionQrl);
 
 type GetAuthSessionArgs = {
   event: RequestEventCommon;
@@ -149,40 +162,40 @@ export const getAuthSession = ({ event, config }: GetAuthSessionArgs) => {
   return shared;
 };
 
-type HandleOnRequestArgs = {
-  config: QwikAuthConfig;
-  event: RequestEvent;
-};
+export const onAuthRequestQrl = (
+  configQrl: QRL<(event: RequestEvent) => AuthConfig>
+) => {
+  return $(async (event: RequestEvent) => {
+    const config = await configQrl(event);
 
-export const handleOnRequest = async ({
-  config,
-  event,
-}: HandleOnRequestArgs) => {
-  if (isServer) {
-    const prefix: string = "/api/auth";
+    if (isServer) {
+      const prefix: string = "/api/auth";
 
-    const action = event.url.pathname
-      .slice(prefix.length + 1)
-      .split("/")[0] as AuthAction;
+      const action = event.url.pathname
+        .slice(prefix.length + 1)
+        .split("/")[0] as AuthAction;
 
-    if (
-      actions.includes(action) &&
-      event.url.pathname.startsWith(prefix + "/")
-    ) {
-      const res = await Auth(event.request, config);
-      const cookie = res.headers.get("set-cookie");
-      if (cookie) {
-        event.headers.set("set-cookie", cookie);
-        res.headers.delete("set-cookie");
-        fixCookies(event);
+      if (
+        actions.includes(action) &&
+        event.url.pathname.startsWith(prefix + "/")
+      ) {
+        const res = await Auth(event.request, config);
+        const cookie = res.headers.get("set-cookie");
+        if (cookie) {
+          event.headers.set("set-cookie", cookie);
+          res.headers.delete("set-cookie");
+          fixCookies(event);
+        }
+        throw event.send(res);
+      } else {
+        const session = await getSessionData(event.request, config);
+        event.sharedMap.set("session", session);
       }
-      throw event.send(res);
-    } else {
-      const session = await getSessionData(event.request, config);
-      event.sharedMap.set("session", session);
     }
-  }
+  });
 };
+
+export const onAuthRequest$ = implicit$FirstArg(onAuthRequestQrl);
 
 export const ensureAuthMiddleware = (event: RequestEvent) => {
   const isLoggedIn = event.sharedMap.has("session");

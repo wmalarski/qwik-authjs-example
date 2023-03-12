@@ -1,11 +1,11 @@
 import { component$ } from "@builder.io/qwik";
 import { Link, routeLoader$, type DocumentHead } from "@builder.io/qwik-city";
 import { getAuthSession } from "~/lib/qwik-auth";
-import { authOptions } from "~/server/auth";
+import { authConfig } from "~/server/auth";
 
 export const useUserLoader = routeLoader$(async (event) => {
   const session = await getAuthSession({
-    config: authOptions(event),
+    config: authConfig(event),
     event,
   });
 
