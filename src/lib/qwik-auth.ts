@@ -122,7 +122,8 @@ export const authSigninActionQrl = (
   );
 };
 
-export const authSigninAction$ = implicit$FirstArg(authSigninActionQrl);
+export const authSigninAction$ =
+  /*#__PURE__*/ implicit$FirstArg(authSigninActionQrl);
 
 export const authSignoutActionQrl = (
   configQrl: QRL<(event: RequestEventAction) => AuthConfig>
@@ -142,7 +143,8 @@ export const authSignoutActionQrl = (
   );
 };
 
-export const authSignoutAction$ = implicit$FirstArg(authSignoutActionQrl);
+export const authSignoutAction$ =
+  /*#__PURE__*/ implicit$FirstArg(authSignoutActionQrl);
 
 type GetAuthSessionArgs = {
   event: RequestEventCommon;
@@ -166,9 +168,8 @@ export const onAuthRequestQrl = (
   configQrl: QRL<(event: RequestEvent) => AuthConfig>
 ) => {
   return $(async (event: RequestEvent) => {
-    const config = await configQrl(event);
-
     if (isServer) {
+      const config = await configQrl(event);
       const prefix: string = "/api/auth";
 
       const action = event.url.pathname
@@ -195,7 +196,7 @@ export const onAuthRequestQrl = (
   });
 };
 
-export const onAuthRequest$ = implicit$FirstArg(onAuthRequestQrl);
+export const onAuthRequest$ = /*#__PURE__*/ implicit$FirstArg(onAuthRequestQrl);
 
 export const ensureAuthMiddleware = (event: RequestEvent) => {
   const isLoggedIn = event.sharedMap.has("session");
