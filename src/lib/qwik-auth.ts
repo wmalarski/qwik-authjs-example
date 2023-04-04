@@ -1,12 +1,13 @@
 import { Auth, skipCSRFCheck } from "@auth/core";
 import type { AuthAction, AuthConfig, Session } from "@auth/core/types";
-import { $, implicit$FirstArg, type QRL } from "@builder.io/qwik";
+import { implicit$FirstArg, type QRL } from "@builder.io/qwik";
 import {
   globalAction$,
   z,
   zod$,
   type RequestEvent,
   type RequestEventAction,
+  type RequestEventBase,
   type RequestEventCommon,
 } from "@builder.io/qwik-city";
 import { isServer } from "@builder.io/qwik/build";
@@ -146,54 +147,51 @@ export const authSignoutActionQrl = (
 export const authSignoutAction$ =
   /*#__PURE__*/ implicit$FirstArg(authSignoutActionQrl);
 
-type GetAuthSessionArgs = {
-  event: RequestEventCommon;
-  config: QwikAuthConfig;
-};
-
-export const getAuthSession = ({ event, config }: GetAuthSessionArgs) => {
-  const promise = event.sharedMap.get("session");
-
-  if (promise) {
-    return promise;
-  }
-
-  const shared = getSessionData(event.request, config);
-  event.sharedMap.set("session", shared);
-
-  return shared;
-};
-
 export const onAuthRequestQrl = (
-  configQrl: QRL<(event: RequestEvent) => AuthConfig>
+  configQrl: QRL<(event: RequestEventBase) => AuthConfig>
 ) => {
-  return $(async (event: RequestEvent) => {
-    if (isServer) {
-      const config = await configQrl(event);
-      const prefix: string = "/api/auth";
+  return {
+    getAuthSession: async (event: RequestEventBase) => {
+      const promise = event.sharedMap.get("session");
 
-      const action = event.url.pathname
-        .slice(prefix.length + 1)
-        .split("/")[0] as AuthAction;
-
-      if (
-        actions.includes(action) &&
-        event.url.pathname.startsWith(prefix + "/")
-      ) {
-        const res = await Auth(event.request, config);
-        const cookie = res.headers.get("set-cookie");
-        if (cookie) {
-          event.headers.set("set-cookie", cookie);
-          res.headers.delete("set-cookie");
-          fixCookies(event);
-        }
-        throw event.send(res);
-      } else {
-        const session = await getSessionData(event.request, config);
-        event.sharedMap.set("session", session);
+      if (promise) {
+        return promise;
       }
-    }
-  });
+
+      const config = await configQrl(event);
+      const shared = getSessionData(event.request, config);
+      event.sharedMap.set("session", shared);
+
+      return shared;
+    },
+    onRequest: async (event: RequestEvent) => {
+      if (isServer) {
+        const config = await configQrl(event);
+        const prefix: string = "/api/auth";
+
+        const action = event.url.pathname
+          .slice(prefix.length + 1)
+          .split("/")[0] as AuthAction;
+
+        if (
+          actions.includes(action) &&
+          event.url.pathname.startsWith(prefix + "/")
+        ) {
+          const res = await Auth(event.request, config);
+          const cookie = res.headers.get("set-cookie");
+          if (cookie) {
+            event.headers.set("set-cookie", cookie);
+            res.headers.delete("set-cookie");
+            fixCookies(event);
+          }
+          throw event.send(res);
+        } else {
+          const session = await getSessionData(event.request, config);
+          event.sharedMap.set("session", session);
+        }
+      }
+    },
+  };
 };
 
 export const onAuthRequest$ = /*#__PURE__*/ implicit$FirstArg(onAuthRequestQrl);

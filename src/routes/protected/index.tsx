@@ -1,13 +1,9 @@
 import { component$ } from "@builder.io/qwik";
 import { Link, routeLoader$, type DocumentHead } from "@builder.io/qwik-city";
-import { getAuthSession } from "~/lib/qwik-auth";
-import { authConfig } from "~/server/auth";
+import { getAuthSession } from "../plugin@auth";
 
 export const useUserLoader = routeLoader$(async (event) => {
-  const session = await getAuthSession({
-    config: authConfig(event),
-    event,
-  });
+  const session = await getAuthSession(event);
 
   if (!session) {
     throw event.redirect(302, "/api/auth/signin");

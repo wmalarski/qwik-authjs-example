@@ -5,22 +5,16 @@ import {
   routeLoader$,
   type DocumentHead,
 } from "@builder.io/qwik-city";
-import {
-  authSigninAction$,
-  authSignoutAction$,
-  getAuthSession,
-} from "~/lib/qwik-auth";
+import { authSigninAction$, authSignoutAction$ } from "~/lib/qwik-auth";
 import { authConfig } from "~/server/auth";
+import { getAuthSession } from "./plugin@auth";
 
 export const useAuthSignin = authSigninAction$((event) => authConfig(event));
 
 export const useAuthSignout = authSignoutAction$((event) => authConfig(event));
 
 export const useAuthSession = routeLoader$((event) => {
-  return getAuthSession({
-    config: authConfig(event),
-    event,
-  });
+  return getAuthSession(event);
 });
 
 export default component$(() => {
