@@ -5,13 +5,7 @@ import {
   routeLoader$,
   type DocumentHead,
 } from "@builder.io/qwik-city";
-import { authSigninAction$, authSignoutAction$ } from "~/lib/qwik-auth";
-import { authConfig } from "~/server/auth";
-import { getAuthSession } from "./plugin@auth";
-
-export const useAuthSignin = authSigninAction$((event) => authConfig(event));
-
-export const useAuthSignout = authSignoutAction$((event) => authConfig(event));
+import { getAuthSession, useAuthSignin, useAuthSignout } from "./plugin@auth";
 
 export const useAuthSession = routeLoader$((event) => {
   return getAuthSession(event);

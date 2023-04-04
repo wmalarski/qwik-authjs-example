@@ -6,7 +6,6 @@ import {
   z,
   zod$,
   type RequestEvent,
-  type RequestEventAction,
   type RequestEventBase,
   type RequestEventCommon,
 } from "@builder.io/qwik-city";
@@ -93,64 +92,48 @@ const getSessionData = async (
   throw new Error(data.message);
 };
 
-export const authSigninActionQrl = (
-  configQrl: QRL<(event: RequestEventAction) => AuthConfig>
-) => {
-  // eslint-disable-next-line qwik/loader-location
-  return globalAction$(
-    async ({ providerId, callbackUrl, ...rest }, event) => {
-      const config = await configQrl(event);
-
-      callbackUrl ??= getCurrentPageForAction(event);
-      const body = new URLSearchParams({ callbackUrl });
-
-      Object.entries(rest || {}).forEach(([key, value]) => {
-        body.set(key, String(value));
-      });
-
-      const pathname =
-        "/api/auth/signin" + (providerId ? `/${providerId}` : "");
-      const data = await authAction(body, event, pathname, config);
-
-      if (data.url) {
-        throw event.redirect(301, data.url);
-      }
-    },
-    zod$({
-      callbackUrl: z.string().optional(),
-      providerId: z.string().optional(),
-    })
-  );
-};
-
-export const authSigninAction$ =
-  /*#__PURE__*/ implicit$FirstArg(authSigninActionQrl);
-
-export const authSignoutActionQrl = (
-  configQrl: QRL<(event: RequestEventAction) => AuthConfig>
-) => {
-  // eslint-disable-next-line qwik/loader-location
-  return globalAction$(
-    async ({ callbackUrl }, event) => {
-      const config = await configQrl(event);
-
-      callbackUrl ??= getCurrentPageForAction(event);
-      const body = new URLSearchParams({ callbackUrl });
-      await authAction(body, event, `/api/auth/signout`, config);
-    },
-    zod$({
-      callbackUrl: z.string().optional(),
-    })
-  );
-};
-
-export const authSignoutAction$ =
-  /*#__PURE__*/ implicit$FirstArg(authSignoutActionQrl);
-
 export const onAuthRequestQrl = (
   configQrl: QRL<(event: RequestEventBase) => AuthConfig>
 ) => {
   return {
+    // eslint-disable-next-line qwik/loader-location
+    useAuthSignin: globalAction$(
+      async ({ providerId, callbackUrl, ...rest }, event) => {
+        const config = await configQrl(event);
+
+        callbackUrl ??= getCurrentPageForAction(event);
+        const body = new URLSearchParams({ callbackUrl });
+
+        Object.entries(rest || {}).forEach(([key, value]) => {
+          body.set(key, String(value));
+        });
+
+        const pathname =
+          "/api/auth/signin" + (providerId ? `/${providerId}` : "");
+        const data = await authAction(body, event, pathname, config);
+
+        if (data.url) {
+          throw event.redirect(301, data.url);
+        }
+      },
+      zod$({
+        callbackUrl: z.string().optional(),
+        providerId: z.string().optional(),
+      })
+    ),
+    // eslint-disable-next-line qwik/loader-location
+    useAuthSignout: globalAction$(
+      async ({ callbackUrl }, event) => {
+        const config = await configQrl(event);
+
+        callbackUrl ??= getCurrentPageForAction(event);
+        const body = new URLSearchParams({ callbackUrl });
+        await authAction(body, event, `/api/auth/signout`, config);
+      },
+      zod$({
+        callbackUrl: z.string().optional(),
+      })
+    ),
     getAuthSession: async (event: RequestEventBase) => {
       const promise = event.sharedMap.get("session");
 
@@ -195,10 +178,3 @@ export const onAuthRequestQrl = (
 };
 
 export const onAuthRequest$ = /*#__PURE__*/ implicit$FirstArg(onAuthRequestQrl);
-
-export const ensureAuthMiddleware = (event: RequestEvent) => {
-  const isLoggedIn = event.sharedMap.has("session");
-  if (!isLoggedIn) {
-    throw event.error(403, "sfs");
-  }
-};
